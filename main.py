@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse
+import csv
+from datetime import date
 
 startURL = "https://en.wikipedia.org/wiki/Alphabet_Inc."
 
@@ -22,13 +24,42 @@ def prepLinks(url, links):
         parsedLink = urlparse(link)
 
         if not parsedLink.netloc == parsedURL.netloc:
-            preppedLink = parsedLink.netloc+parsedLink.path
-            preppedLinks.append(preppedLink)
+            if not parsedLink.netloc.startswith("www"):
+                preppedLink = parsedLink.netloc+parsedLink.path
+                preppedLinks.append(preppedLink)
 
     return url, preppedLinks
+
+def hashLinks(links):
+    hashedLinks = []
+    for link in links:
+        hashedLink = str(hash(link))[:7]
+
+        hashedLinks.append(hashedLink)
+
+    return hashedLinks
+
+def noteLinks(hashedLinks, preppedlinks):
+    #first sort out duplicates (in both lists)
+    hashedLinks = set(hashedLinks)
+    # Create a new list with duplicates removed         - Yes this is untested, LOL
+    filteredHashedLinks = []
+    filteredPreppedLinks = []
+    for i, x in enumerate(hashedLinks):
+        if x not in filteredHashedLinks:
+            filteredHashedLinks.append(x)
+            filteredPreppedLinks.append(preppedlinks[i])
+
+    with open('data.csv', mode='r+', newline='') as file:
+        writer = csv.writer(file)
+        for i in range(len(filteredHashedLinks)):
+            if not filteredHashedLinks[i] in file:
+                writer.writerow([filteredHashedLinks[i], filteredPreppedLinks[i], 0, str(date.today())])
 
 
 
 url, links = extractLinks(startURL)
 url, preppedLinks = prepLinks(url, links)
-print(preppedLinks)
+hashedLinks = hashLinks(preppedLinks)
+
+noteLinks(hashedLinks, preppedLinks)
